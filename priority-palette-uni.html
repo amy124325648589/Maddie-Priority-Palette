@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Priority Palette</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500;1,600&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #FFF6F8;
+    --ink: #3A1220;
+    --muted: #8C5A68;
+    --muted-soft: #A9798A;
+    --line: #F3D6DE;
+    --accent: #D6336C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: #F7BBD6; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Header */
+  .header {
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: 20px; margin-bottom: 24px;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .2em;
+    text-transform: uppercase; color: #C9748E; margin: 0 0 4px;
+  }
+  h1 {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
+    font-size: 44px; line-height: 1; margin: 0; color: var(--ink);
+  }
+  .sub { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+  .add-btn-main {
+    display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px;
+    color: #fff; background: var(--accent); padding: 11px 18px; border-radius: 999px; border: none;
+    cursor: pointer; box-shadow: 0 6px 16px -4px rgba(182,23,75,0.4); transition: filter .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .add-btn-main:hover { filter: brightness(1.06); }
+
+  /* Palette strip */
+  .strip-section { margin-bottom: 40px; }
+  .strip {
+    display: flex; height: 12px; width: 100%; border-radius: 999px; overflow: hidden; background: #F3D6DE;
+  }
+  .strip-seg { transition: flex-grow .4s ease; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+  .legend-stat { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #B6174B; }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+  .card {
+    border-radius: 24px; overflow: hidden; box-shadow: 0 8px 24px -8px rgba(182,23,75,0.18);
+    animation: rise .52s cubic-bezier(.22,.9,.32,1) both;
+  }
+  .card-head {
+    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; color: #fff;
+  }
+  .card-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 19px; margin: 0; line-height: 1.2; }
+  .card-shade {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.75); margin: 2px 0 0;
+  }
+  .card-count {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.15); border-radius: 999px; padding: 4px 10px;
+  }
+  .card-body { padding: 8px 16px 16px; }
+
+  .task-list { list-style: none; margin: 0; padding: 0; }
+  .task-row {
+    display: flex; align-items: flex-start; gap: 12px; padding: 10px 4px; border-radius: 12px;
+    transition: opacity .42s ease, transform .42s ease;
+  }
+  .task-row.completing { opacity: 0; transform: translateX(18px) scale(0.98); pointer-events: none; }
+
+  .check-btn {
+    margin-top: 2px; flex-shrink: 0; width: 22px; height: 22px; border-radius: 999px; border: 2px solid;
+    display: flex; align-items: center; justify-content: center; background: transparent; cursor: pointer;
+    transition: transform .15s; padding: 0;
+  }
+  .check-btn:hover { transform: scale(1.1); }
+  .check-btn svg { width: 13px; height: 13px; }
+
+  .task-text { flex: 1; min-width: 0; }
+  .task-text p { font-size: 14.5px; line-height: 1.35; margin: 0; color: var(--ink); }
+  .badge {
+    display: inline-flex; align-items: center; margin-top: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: .03em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px;
+    border: 1px solid;
+  }
+
+  .del-btn {
+    flex-shrink: 0; background: none; border: none; cursor: pointer; padding: 4px; color: #C98196;
+    opacity: 0; transition: opacity .15s, color .15s;
+  }
+  .task-row:hover .del-btn { opacity: 1; }
+  .del-btn:hover { color: #B6174B; }
+  .del-btn svg { width: 14px; height: 14px; }
+
+  .empty-note { font-size: 13px; font-style: italic; text-align: center; padding: 18px 0; color: var(--muted-soft); }
+
+  .add-task-btn {
+    margin-top: 6px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 12.5px; font-weight: 500; padding: 9px; border-radius: 12px; border: 1.5px dashed;
+    background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .add-task-btn svg { width: 13px; height: 13px; }
+
+  /* History */
+  .completedLog-section { margin-top: 48px; }
+  .completedLog-title {
+    font-family: 'Playfair Display', serif; font-style: italic; font-size: 20px; margin: 0 0 12px; color: var(--ink);
+  }
+  .completedLog-title span { font-family: 'DM Sans', sans-serif; font-style: normal; font-size: 12px; color: var(--muted-soft); }
+  .completedLog-box {
+    background: var(--ink); border-radius: 24px; padding: 20px; max-height: 320px; overflow-y: auto;
+  }
+  .completedLog-empty { text-align: center; font-size: 13px; font-style: italic; color: rgba(255,255,255,0.45); padding: 24px 0; }
+  .completedLog-list { list-style: none; margin: 0; padding: 0; }
+  .completedLog-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .completedLog-row:last-child { border-bottom: none; }
+  .completedLog-dot { width: 10px; height: 10px; border-radius: 999px; flex-shrink: 0; }
+  .completedLog-text { flex: 1; font-size: 13.5px; text-decoration: line-through; color: rgba(255,255,255,0.65); }
+  .completedLog-time { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: rgba(255,255,255,0.4); flex-shrink: 0; }
+  .restore-btn { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); padding: 4px; }
+  .restore-btn:hover { color: #fff; }
+  .restore-btn svg { width: 14px; height: 14px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(58,18,32,0.45); display: none; align-items: center;
+    justify-content: center; padding: 16px; z-index: 50;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    width: 100%; max-width: 440px; background: #fff; border-radius: 24px; padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: rise .35s cubic-bezier(.22,.9,.32,1) both;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .modal-head h3 { font-family: 'Playfair Display', serif; font-style: italic; font-size: 22px; margin: 0; }
+  .close-btn { background: none; border: none; cursor: pointer; color: var(--muted-soft); padding: 4px; }
+  .close-btn:hover { color: var(--ink); }
+  .close-btn svg { width: 18px; height: 18px; }
+
+  .field-label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 7px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; font-size: 12px;
+    font-weight: 500; border: 2px solid; background: transparent; cursor: pointer; transition: background .15s, color .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .text-input, .date-input {
+    width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); font-size: 14px;
+    color: var(--ink); font-family: 'DM Sans', sans-serif; margin-bottom: 16px; background: #fff;
+  }
+  .date-input { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .text-input:focus, .date-input:focus { outline: 2px solid #F7BBD6; outline-offset: 1px; }
+  .text-input { margin-bottom: 16px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+  .field-row .text-input, .field-row .date-input { margin-bottom: 0; }
+
+  .submit-btn {
+    width: 100%; font-weight: 600; font-size: 14px; color: #fff; background: var(--accent);
+    padding: 13px; border-radius: 12px; border: none; cursor: pointer; margin-top: 16px;
+    font-family: 'DM Sans', sans-serif; transition: filter .15s;
+  }
+  .submit-btn:hover { filter: brightness(1.06); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+  button:focus-visible, input:focus-visible { outline: 2px solid #D6336C; outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .modal { animation: none !important; }
+    * { transition-duration: 1ms !important; }
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 34px; }
+    .header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div>
+      <p class="eyebrow" id="todayLabel"></p>
+      <h1>Priority Palette</h1>
+      <p class="sub">Uni, F&amp;S, apprenticeship, and extras — one palette, four shades.</p>
+    </div>
+    <button class="add-btn-main" onclick="openAddModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+      Add task
+    </button>
+  </div>
+
+  <div class="strip-section">
+    <div class="strip" id="strip"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="completedLog-section">
+    <h3 class="completedLog-title">Used shades <span>&nbsp; completed history</span></h3>
+    <div class="completedLog-box">
+      <div id="historyEmpty" class="completedLog-empty">Nothing logged yet — completed tasks land here.</div>
+      <ul class="completedLog-list" id="historyList"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <form class="modal" id="addForm">
+    <div class="modal-head">
+      <h3>Add a task</h3>
+      <button type="button" class="close-btn" onclick="closeAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <label class="field-label">Category</label>
+    <div class="chip-row" id="chipRow"></div>
+    <label class="field-label">Task</label>
+    <input class="text-input" id="taskTextInput" required placeholder="What needs doing?" />
+    <div class="field-row">
+      <div>
+        <label class="field-label">Due date</label>
+        <input type="date" class="date-input" id="taskDueInput" />
+      </div>
+      <div>
+        <label class="field-label">Or timeframe</label>
+        <input class="text-input" id="taskLabelInput" placeholder="e.g. This week" />
+      </div>
+    </div>
+    <button type="submit" class="submit-btn">Add to palette</button>
+  </form>
+</div>
+
+<script>
+  var CATEGORIES = [
+    { key: "uniassign", name: "University Assignments", shade: "Coral", bold: "#FF6F91", tint: "#FFE8ED" },
+    { key: "fands", name: "F&S", shade: "Raspberry", bold: "#B6174B", tint: "#FBE4EC" },
+    { key: "apprentice", name: "Apprentice", shade: "Orchid", bold: "#9B4F8C", tint: "#F3E3F1" },
+    { key: "extras", name: "Extras", shade: "Watermelon", bold: "#F2568F", tint: "#FDE3EC" }
+  ];
+
+  var DEFAULT_TASKS = [];
+
+  var STORAGE_KEY = "priorityPaletteData_uni_v1";
+  var storageAvailable = true;
+  try {
+    var testKey = "__pp_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+  } catch (e) {
+    storageAvailable = false;
+  }
+
+  function loadState() {
+    if (storageAvailable) {
+      try {
+        var raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.tasks) && Array.isArray(parsed.completedLog)) return parsed;
+        }
+      } catch (e) {}
+    }
+    return { tasks: DEFAULT_TASKS.slice(), completedLog: [] };
+  }
+
+  function saveState() {
+    if (!storageAvailable) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: tasks, completedLog: completedLog }));
+    } catch (e) {}
+  }
+
+  var state = loadState();
+  var tasks = state.tasks;
+  var completedLog = state.completedLog;
+  var completingIds = {};
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function uid() { return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function startOfDay(d) { var x = new Date(d); x.setHours(0,0,0,0); return x; }
+  function daysUntil(dueStr) {
+    var today = startOfDay(new Date());
+    var due = startOfDay(new Date(dueStr + "T00:00:00"));
+    return Math.round((due - today) / 86400000);
+  }
+  function formatDue(dueStr) {
+    var d = new Date(dueStr + "T00:00:00");
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
+  function urgencyInfo(task) {
+    if (task.due) {
+      var n = daysUntil(task.due);
+      if (n < 0) return { text: "Overdue · " + formatDue(task.due), kind: "overdue", order: 0 };
+      if (n === 0) return { text: "Due today", kind: "today", order: 1 };
+      if (n <= 7) return { text: formatDue(task.due) + " · " + n + "d left", kind: "soon", order: 2 };
+      return { text: formatDue(task.due), kind: "later", order: 3 };
+    }
+    if (task.label) {
+      var l = task.label.toLowerCase();
+      if (l.indexOf("week") !== -1) return { text: task.label, kind: "soon", order: 2 };
+      if (l.indexOf("nov") !== -1 || l.indexOf("dec") !== -1) return { text: task.label, kind: "later", order: 3 };
+      return { text: task.label, kind: "none", order: 4 };
+    }
+    return { text: "No date", kind: "none", order: 4 };
+  }
+  var URGENCY_STYLE = {
+    overdue: { bg: "#C1121F", fg: "#FFFFFF", border: "#C1121F" },
+    today:   { bg: "#B6174B", fg: "#FFFFFF", border: "#B6174B" },
+    soon:    { bg: "#E8B13A", fg: "#3A1220", border: "#E8B13A" },
+    later:   { bg: "transparent", fg: "#8C5A68", border: "#D9B4C0" },
+    none:    { bg: "transparent", fg: "#A98A93", border: "#E6CDD5" }
+  };
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function render() {
+    renderToday();
+    renderStrip();
+    renderGrid();
+    renderHistory();
+    saveState();
+  }
+
+  function renderToday() {
+    var today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    document.getElementById("todayLabel").textContent = today;
+  }
+
+  function renderStrip() {
+    var strip = document.getElementById("strip");
+    var legend = document.getElementById("legend");
+    strip.innerHTML = "";
+    legend.innerHTML = "";
+    var totalActive = tasks.length;
+    var totalDone = completedLog.length;
+    var totalAll = totalActive + totalDone;
+    var percent = totalAll ? Math.round((totalDone / totalAll) * 100) : 0;
+
+    CATEGORIES.forEach(function(c) {
+      var count = tasks.filter(function(t) { return t.cat === c.key; }).length;
+      var seg = document.createElement("div");
+      seg.className = "strip-seg";
+      seg.style.backgroundColor = c.bold;
+      seg.style.flexGrow = count || 0.0001;
+      seg.title = c.name + ": " + count;
+      strip.appendChild(seg);
+
+      var item = document.createElement("div");
+      item.className = "legend-item";
+      item.innerHTML = '<span class="dot" style="background:' + c.bold + '"></span><span>' + esc(c.name) + " · " + count + "</span>";
+      legend.appendChild(item);
+    });
+
+    var stat = document.createElement("div");
+    stat.className = "legend-stat";
+    stat.textContent = percent + "% cleared · " + totalDone + " done";
+    legend.appendChild(stat);
+  }
+
+  function iconCheck() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  }
+  function iconTrash() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+  }
+  function iconUndo() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+  }
+  function iconPlus() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  }
+
+  function renderGrid() {
+    var grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    CATEGORIES.forEach(function(cat, i) {
+      var catTasks = tasks.filter(function(t) { return t.cat === cat.key; });
+      catTasks.sort(function(a, b) { return urgencyInfo(a).order - urgencyInfo(b).order; });
+
+      var card = document.createElement("div");
+      card.className = "card";
+      card.style.backgroundColor = cat.tint;
+      card.style.animationDelay = (i * 70) + "ms";
+
+      var head = document.createElement("div");
+      head.className = "card-head";
+      head.style.backgroundColor = cat.bold;
+      head.innerHTML =
+        '<div><h2 class="card-title">' + esc(cat.name) + '</h2>' +
+        '<p class="card-shade">' + esc(cat.shade) + '</p></div>' +
+        '<span class="card-count">' + catTasks.length + '</span>';
+      card.appendChild(head);
+
+      var body = document.createElement("div");
+      body.className = "card-body";
+
+      if (catTasks.length === 0) {
+        body.innerHTML = '<p class="empty-note">Nothing on the palette yet.</p>';
+      } else {
+        var ul = document.createElement("ul");
+        ul.className = "task-list";
+        catTasks.forEach(function(t) {
+          var u = urgencyInfo(t);
+          var us = URGENCY_STYLE[u.kind];
+          var li = document.createElement("li");
+          li.className = "task-row" + (completingIds[t.id] ? " completing" : "");
+          li.innerHTML =
+            '<button class="check-btn" style="border-color:' + cat.bold + ';background:' + (completingIds[t.id] ? cat.bold : 'transparent') + '" aria-label="Mark done" onclick="completeTask(\'' + t.id + '\')">' +
+              (completingIds[t.id] ? '<span style="color:#fff;display:flex">' + iconCheck() + '</span>' : '') +
+            '</button>' +
+            '<div class="task-text">' +
+              '<p>' + esc(t.text) + '</p>' +
+              '<span class="badge" style="background:' + us.bg + ';color:' + us.fg + ';border-color:' + us.border + '">' + esc(u.text) + '</span>' +
+            '</div>' +
+            '<button class="del-btn" aria-label="Remove task" onclick="deleteTask(\'' + t.id + '\')">' + iconTrash() + '</button>';
+          ul.appendChild(li);
+        });
+        body.appendChild(ul);
+      }
+
+      var addBtn = document.createElement("button");
+      addBtn.className = "add-task-btn";
+      addBtn.style.borderColor = cat.bold;
+      addBtn.style.color = cat.bold;
+      addBtn.innerHTML = iconPlus() + " Add task";
+      addBtn.onclick = function() { openAddModal(cat.key); };
+      body.appendChild(addBtn);
+
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+  }
+
+  function renderHistory() {
+    var list = document.getElementById("historyList");
+    var emptyNote = document.getElementById("historyEmpty");
+    list.innerHTML = "";
+    if (completedLog.length === 0) {
+      emptyNote.style.display = "block";
+      return;
+    }
+    emptyNote.style.display = "none";
+    completedLog.forEach(function(h) {
+      var cat = CATEGORIES.filter(function(c) { return c.key === h.cat; })[0];
+      var ts = new Date(h.completedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      var li = document.createElement("li");
+      li.className = "completedLog-row";
+      li.innerHTML =
+        '<span class="completedLog-dot" style="background:' + (cat ? cat.bold : '#fff') + '"></span>' +
+        '<span class="completedLog-text">' + esc(h.text) + '</span>' +
+        '<span class="completedLog-time">' + ts + '</span>' +
+        '<button class="restore-btn" aria-label="Restore task" onclick="restoreTask(\'' + h.id + '\')">' + iconUndo() + '</button>';
+      list.appendChild(li);
+    });
+  }
+
+  function completeTask(id) {
+    if (completingIds[id]) return;
+    completingIds[id] = true;
+    renderGrid();
+    var delay = reduceMotion ? 0 : 420;
+    setTimeout(function() {
+      var idx = -1;
+      for (var i = 0; i < tasks.length; i++) { if (tasks[i].id === id) { idx = i; break; } }
+      if (idx !== -1) {
+        var t = tasks[idx];
+        completedLog.unshift({ id: t.id, cat: t.cat, text: t.text, due: t.due, label: t.label, completedAt: new Date().toISOString() });
+        tasks.splice(idx, 1);
+      }
+      delete completingIds[id];
+      render();
+    }, delay);
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(function(t) { return t.id !== id; });
+    render();
+  }
+
+  function restoreTask(id) {
+    var idx = -1;
+    for (var i = 0; i < completedLog.length; i++) { if (completedLog[i].id === id) { idx = i; break; } }
+    if (idx !== -1) {
+      var h = completedLog[idx];
+      tasks.push({ id: uid(), cat: h.cat, text: h.text, due: h.due, label: h.label });
+      completedLog.splice(idx, 1);
+    }
+    render();
+  }
+
+  // Modal
+  var currentModalCat = CATEGORIES[0].key;
+
+  function buildChipRow() {
+    var row = document.getElementById("chipRow");
+    row.innerHTML = "";
+    CATEGORIES.forEach(function(c) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip";
+      chip.style.borderColor = c.bold;
+      chip.style.color = currentModalCat === c.key ? "#fff" : c.bold;
+      chip.style.backgroundColor = currentModalCat === c.key ? c.bold : "transparent";
+      chip.textContent = c.shade;
+      chip.onclick = function() { currentModalCat = c.key; buildChipRow(); };
+      row.appendChild(chip);
+    });
+  }
+
+  function openAddModal(catKey) {
+    currentModalCat = catKey || CATEGORIES[0].key;
+    document.getElementById("taskTextInput").value = "";
+    document.getElementById("taskDueInput").value = "";
+    document.getElementById("taskLabelInput").value = "";
+    buildChipRow();
+    document.getElementById("modalOverlay").classList.add("open");
+    setTimeout(function() { document.getElementById("taskTextInput").focus(); }, 50);
+  }
+  function closeAddModal() {
+    document.getElementById("modalOverlay").classList.remove("open");
+  }
+
+  document.getElementById("modalOverlay").addEventListener("click", function(e) {
+    if (e.target === this) closeAddModal();
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closeAddModal();
+  });
+
+  document.getElementById("addForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    var text = document.getElementById("taskTextInput").value.trim();
+    if (!text) return;
+    var due = document.getElementById("taskDueInput").value;
+    var label = document.getElementById("taskLabelInput").value.trim();
+    tasks.push({
+      id: uid(),
+      cat: currentModalCat,
+      text: text,
+      due: due || null,
+      label: (!due && label) ? label : undefined
+    });
+    closeAddModal();
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
